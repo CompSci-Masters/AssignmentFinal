@@ -468,14 +468,25 @@ class FlightManager:
                     for pilot in available_pilots:
                         print(f"{pilot[0]}: {pilot[1]} {pilot[2]}")
 
-            while True:
-                new_pilot_id = input("Please enter a different Pilot ID from the list above: ").strip()
-
-                if any(pilot[0] == int(new_pilot_id) for pilot in available_pilots):
-                    new_pilot_id = new_pilot_id  # Reassign valid pilot
-                    break
                 else:
-                    print("Invalid Pilot ID. Please choose one from the list.")
+                    print("No available pilots on this date.")
+                    input("Press Enter to return to the menu.")
+
+                while True:
+                    new_pilot_id2 = input("Please enter a different Pilot ID from the list above: ").strip()
+
+                    if not new_pilot_id2.isdigit():
+                        print("Invalid input.")
+                        continue
+
+                    new_pilot_id2 = int(new_pilot_id2)
+
+                    if any(pilot[0] == new_pilot_id2 for pilot in available_pilots):
+                        new_pilot_id = new_pilot_id2
+                        break
+                    
+                    else:
+                        print("Invalid Pilot ID. Please choose one from the list.")
         else:
             print("No pilots available on this date. Please press enter to return to the menu.")
             input()
