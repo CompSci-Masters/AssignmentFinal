@@ -1,51 +1,46 @@
-import matplotlib.pyplot as visual
+import matplotlib.pyplot as plt  # ✅ Changed alias from 'visual' to 'plt' (conventional & clearer)
+
+import matplotlib
+matplotlib.use('Agg')  # ✅ Forces non-interactive backend for Codespaces compatibility (avoids GUI issues)
 
 class Analytics:
     def __init__(self, connection):
         self.conn = connection
         self.cursor = self.conn.cursor()
 
- #1. Creates a report with useful graphs       
+    # 1. Creates a report with useful graphs
     def flight_report(self):
         print("\n--- Flight and Destination Report ---")  
-        fig, chart_details = visual.subplots(2, 2, figsize=(12, 8))
+        fig, chart_details = plt.subplots(2, 2, figsize=(12, 8))
         fig.suptitle("Flight and Destination Report", fontsize=16)
 
-
-# a. Total Number of Flights 
-        self.cursor.execute("""
-            SELECT COUNT(*) 
-                FROM flight
-        """)
+        # a. Total Number of Flights 
+        self.cursor.execute("""SELECT COUNT(*) FROM flight""")
         total_flights = self.cursor.fetchone()[0]
-#Places the total flight number on the visual report 
+
         chart_details[1, 1].axis('off')
         chart_details[1, 1].text(0.1, 0.6, f"Total Flights: {total_flights}", fontsize=14)
 
-        visual.tight_layout(rect=[0, 0, 1, 0.96])  # leave space for title
-        visual.show(block=False)
-        visual.pause(0.001)
-
-# b. Flights by Status - categorises flights by three statuses.
-
+        # b. Flights by Status
         self.cursor.execute("""
-            SELECT status, 
-                COUNT(*) FROM flight 
-                GROUP BY status
+            SELECT status, COUNT(*) 
+            FROM flight 
+            GROUP BY status
         """)
         status_information = self.cursor.fetchall()
         if status_information:
             statuses, status_count = zip(*status_information)
             chart_details[0, 0].bar(statuses, status_count)
-            chart_details[0, 0].set_title("Flights by Status") #identifies graph title
-            chart_details[0, 0].set_xlabel("Status")           #identifies x axis label 
-            chart_details[0, 0].set_ylabel("Count")            #identifies y axis label
+            chart_details[0, 0].set_title("Flights by Status")
+            chart_details[0, 0].set_xlabel("Status")
+            chart_details[0, 0].set_ylabel("Count")
 
-# c. Shows a graph summarizing the Flights per Day
+        # c. Flights per Day
         self.cursor.execute("""
-            SELECT flight_date, 
-                COUNT(*) FROM flight
-                GROUP BY flight_date ORDER BY flight_date
+            SELECT flight_date, COUNT(*) 
+            FROM flight
+            GROUP BY flight_date 
+            ORDER BY flight_date
         """)
         flight_dates = self.cursor.fetchall()
         if flight_dates:
@@ -56,7 +51,7 @@ class Analytics:
             chart_details[0, 1].set_ylabel("Number of Flights")
             chart_details[0, 1].tick_params(axis='x', rotation=45)
 
-# d. Shows a graph with the top 5 most frequent routes, group by origin and destination. 
+        # d. Top 5 Routes
         self.cursor.execute("""
             SELECT origin_id || ' to ' || destination_id AS route, COUNT(*) AS count
             FROM flight
@@ -66,22 +61,17 @@ class Analytics:
         """)
         route_information = self.cursor.fetchall()
         if route_information:
-            route, route_count = zip(*route_information) #separates out the data into two lists, route and route_count
+            route, route_count = zip(*route_information)
             chart_details[1, 0].barh(route, route_count)
             chart_details[1, 0].set_title("Top 5 Routes")
             chart_details[1, 0].set_xlabel("Flights")
             chart_details[1, 0].invert_yaxis()
 
+        plt.tight_layout(rect=[0, 0, 1, 0.96])
+        fig.savefig("flight_report.png")  # ✅ Save figure instead of show() to avoid GUI issues
+        print("Flight report saved as 'flight_report.png'")  # ✅ Notify user
 
-        chart_details[1, 1].axis('off')
-        chart_details[1, 1].text(0.1, 0.6, f"Total Flights: {total_flights}", fontsize=14)
-
-        visual.tight_layout(rect=[0, 0, 1, 0.96])  # leave space for title
-        visual.show(block=False)
-        visual.pause(0.001)
-
-
-  #2. Pilot Workload Report / Top performers 
+    # 2. Pilot Workload Report
     def pilot_report(self):
         print("\n--- Pilot Workload Report ---")  
 
@@ -97,21 +87,18 @@ class Analytics:
             print("No pilot_details available.")
             return
 
-# Create combined graph_label and counts
         graph_label = [f"{pilot} {lastname}" for pilot, lastname, _ in pilot_details]
         counts = [count for _, _, count in pilot_details]
 
-# Plotting
-        visual.figure(figsize=(10, 6))
-        visual.bar(graph_label, counts)
-        visual.title("Flights per Pilot")
-        visual.xlabel("Pilot ID & Last Name")
-        visual.ylabel("Number of Flights")
-        visual.xticks(rotation=45, ha='right')
-        visual.tight_layout()
-        visual.show(block=False)
-        visual.pause(0.001) #generates visual output 
-
+        plt.figure(figsize=(10, 6))
+        plt.bar(graph_label, counts)
+        plt.title("Flights per Pilot")
+        plt.xlabel("Pilot ID & Last Name")
+        plt.ylabel("Number of Flights")
+        plt.xticks(rotation=45, ha='right')
+        plt.tight_layout()
+        plt.savefig("pilot_report.png")  # ✅ Save instead of show
+        print("Pilot report saved as 'pilot_report.png'")  # ✅ Notify user
 
     def close(self):
         self.conn.close()
