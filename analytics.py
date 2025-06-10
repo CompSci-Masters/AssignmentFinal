@@ -1,7 +1,7 @@
-import matplotlib.pyplot as plt  # ✅ Changed alias from 'visual' to 'plt' (conventional & clearer)
+import matplotlib.pyplot as plt  
 
 import matplotlib
-matplotlib.use('Agg')  # ✅ Forces non-interactive backend for Codespaces compatibility (avoids GUI issues)
+matplotlib.use('Agg')  
 
 class Analytics:
     def __init__(self, connection):
@@ -68,8 +68,8 @@ class Analytics:
             chart_details[1, 0].invert_yaxis()
 
         plt.tight_layout(rect=[0, 0, 1, 0.96])
-        fig.savefig("flight_report.png")  # ✅ Save figure instead of show() to avoid GUI issues
-        print("Flight report saved as 'flight_report.png'")  # ✅ Notify user
+        fig.savefig("flight_report.png")  
+        print("Flight report saved as 'flight_report.png'")  
 
     # 2. Pilot Workload Report
     def pilot_report(self):
@@ -97,8 +97,8 @@ class Analytics:
         plt.ylabel("Number of Flights")
         plt.xticks(rotation=45, ha='right')
         plt.tight_layout()
-        plt.savefig("pilot_report.png")  # ✅ Save instead of show
-        print("Pilot report saved as 'pilot_report.png'")  # ✅ Notify user
+        plt.savefig("pilot_report.png")  
+        print("Pilot report saved as 'pilot_report.png'")  
 
     def close(self):
         self.conn.close()
