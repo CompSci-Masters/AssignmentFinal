@@ -9,33 +9,19 @@ class FlightManager:
         self.cursor = self.conn.cursor()
 
 
-#1. allow the user to view flight by flight ID
+    #allow the user to view flight by flight ID
     def search_by_flight_id(self):
         flight_id = input("Enter Flight ID: ").strip()
         self.cursor.execute("""
-            SELECT 
-            flight.flight_id, 
-            flight.origin_id, 
-            flight.destination_id, 
-            flight.flight_date, 
-            flight.flight_time, 
-            flight.status,
-            pilot.pilot_id,
-            pilot.first_name,
-            pilot.last_name
-            FROM flight
-            INNER JOIN flight_pilot ON flight.flight_id = flight_pilot.flight_id
-            INNER JOIN pilot ON flight_pilot.pilot_id = pilot.pilot_id
-            WHERE flight.flight_id = ?
+            SELECT flight_id, origin_id, destination_id, flight_date, flight_time, status
+            FROM flight WHERE flight_id = ?
         """, (flight_id,))
         result = self.cursor.fetchone()
         if result:
             print("\nFlight Found:")
-            print(tabulate([result], headers=["ID", "Origin", "Destination", "Date", "Time", "Status", "Pilot ID", "First Name", "Surname"], tablefmt="pretty"))
+            print(tabulate([result], headers=["ID", "Origin", "Destination", "Date", "Time", "Status"], tablefmt="pretty"))
         else:
             print("No flight found with that ID.")
-
-#2. allow the user to view flight by date
 
     def search_by_date(self):
         search_date = input("Enter flight start date for the period you wish to view (DD/MM/YYYY): ").strip()
@@ -49,32 +35,19 @@ class FlightManager:
                 
 #find flights with that date and order the table by flight_id. 
         self.cursor.execute("""
-            SELECT 
-            flight.flight_id, 
-            flight.origin_id, 
-            flight.destination_id, 
-            flight.flight_date, 
-            flight.flight_time, 
-            flight.status,
-            pilot.pilot_id,
-            pilot.first_name,
-            pilot.last_name
+            SELECT flight_id, origin_id, destination_id, flight_date, flight_time, status
             FROM flight
-            INNER JOIN flight_pilot ON flight.flight_id = flight_pilot.flight_id
-            INNER JOIN pilot ON flight_pilot.pilot_id = pilot.pilot_id
-            WHERE flight.flight_date = ?
-            ORDER BY flight.flight_time
-        """, (search_date,))
+            WHERE flight_date = ?
+            ORDER BY flight_time
+            """, (search_date,))
         
 #create a table with the flights on the provided date.         
         results = self.cursor.fetchall()
         if results:
             print(f"\nFlights on {search_date}:")
-            print(tabulate(results, headers=["ID", "Origin", "Destination", "Date", "Time", "Status", "Pilot I", "First Name", "Surname"], tablefmt="pretty"))
+            print(tabulate(results, headers=["ID", "Origin", "Destination", "Date", "Time", "Status"], tablefmt="pretty"))
         else:
             print("No flights found on that date.")
-
-#3. allow user to search for all flights with the same status 
 
     def search_by_status(self):
 
@@ -98,31 +71,26 @@ class FlightManager:
         selected_status = status_options[choice]
 
         self.cursor.execute("""
-            SELECT 
-            flight.flight_id, 
-            flight.origin_id, 
-            flight.destination_id, 
-            flight.flight_date, 
-            flight.flight_time, 
-            flight.status,
-            pilot.pilot_id,
-            pilot.first_name,
-            pilot.last_name
+            SELECT flight_id, origin_id, destination_id, flight_date, flight_time, status
             FROM flight
-            INNER JOIN flight_pilot ON flight.flight_id = flight_pilot.flight_id
-            INNER JOIN pilot ON flight_pilot.pilot_id = pilot.pilot_id
-            WHERE flight.status = ?
-            ORDER BY flight.flight_date, flight.flight_time
+                WHERE status = ?
+                ORDER BY flight_date, flight_time
         """, (selected_status,))
 
         results = self.cursor.fetchall()
         if results:
             print(f"\nFlights with status '{selected_status}':")
-            print(tabulate(results, headers=["Flight ID", "Origin", "Destination", "Date", "Time", "Status", "Pilot ID", "First Name", "Surname"], tablefmt="pretty"))
+            print(tabulate(results, headers=["Flight ID", "Origin", "Destination", "Date", "Time", "Status"], tablefmt="pretty"))
         else:
             print(f"No flights found with status '{selected_status}'.")
 
-#4. calls all flights, allowing user to filter by column heading. This includes flight information and pilot information. 
+
+
+
+
+
+
+#calls all flights, allowing user to filter by column heading. This includes flight information and pilot information. 
     def view_flights(self):
 # Rename all column headings into user-friendly titles 
         column_map = {
@@ -135,7 +103,7 @@ class FlightManager:
             "flight.status": "Status",
             "pilot.pilot_id": "Pilot ID",
             "pilot.first_name": "Pilot First Name",
-            "pilot.last_name": "Pilot Last Name"      
+            "pilot.last_name": "Pilot Last Name"        
 
         }
 
@@ -150,7 +118,7 @@ class FlightManager:
 
 # The user selects which columns should be shown in the table. 
 
-# User is asked for their selection from a list and this is stored. 
+    # User is asked for their selection from a list and this is stored. 
 
         selected = input("\nEnter column numbers separated by commas (e.g., 1,3,4) or press Enter to show all: ").strip()
 
@@ -171,15 +139,15 @@ class FlightManager:
             selected_columns = all_columns #if the user presses enter, show all actual database columns names
             selected_labels = display_names # show all user-friendly column labels 
 
-# Build the SQL query with aliases for user-friendly headers
-        selected_status = ", ".join(f"{col} AS '{column_map[col]}'" for col in selected_columns) #maps each database column 
+        # Build the SQL query with aliases for user-friendly headers
+        select_clause = ", ".join(f"{col} AS '{column_map[col]}'" for col in selected_columns) #maps each database column 
 
-#this creates the final SQL statement tha will be eventually used. 
+        #this creates the final SQL statement tha will be eventually used. 
         view_query = f"""
-            SELECT {selected_status} 
+            SELECT {select_clause} 
             FROM flight
-            INNER JOIN flight_pilot ON flight.flight_id = flight_pilot.flight_id
-            INNER JOIN pilot ON flight_pilot.pilot_id = pilot.pilot_id
+            LEFT JOIN flight_pilot ON flight.flight_id = flight_pilot.flight_id
+            LEFT JOIN pilot ON flight_pilot.pilot_id = pilot.pilot_id
         """
 
         try:
@@ -187,7 +155,7 @@ class FlightManager:
             matching_records = self.cursor.fetchall() #retrieves the matching records from teh query 
 
             if matching_records:
-#displays results in a grid with user-friendly headers
+            #displays results in a grid with user-friendly headers
                 print("\n--- Flight Information ---")
                 print(tabulate(matching_records, headers=selected_labels, tablefmt="grid"))
 
@@ -196,7 +164,11 @@ class FlightManager:
         except sqlite3.Error as e:
             print(f"Unable to fetch flight data. Please try again.: {e}") #if there is a n invalid query, this error message is shown. 
             
-#4. Add a new flight
+
+
+
+
+
 
     def add_new_flight(self):
         print("\n=== Add New Flight ===")
@@ -209,7 +181,7 @@ class FlightManager:
                 WHERE iata_code = ?
         """, (origin_id,))
         if not self.cursor.fetchone():
-            print("Origin IATA code not found in records. ")
+            print("Origin IATA code not found in records.")
             return
 
         # Get and validate destination airport
@@ -220,11 +192,11 @@ class FlightManager:
                 WHERE iata_code = ?
         """, (destination_id,))
         if not self.cursor.fetchone():
-            print("Destination IATA code not found in records. ")
+            print("Destination IATA code not found in records.")
             return
 
 
-# Get departure datetime
+        # Get departure datetime
         date_input = input("Enter departure date (DD/MM/YYYY): ")
         flight_time = input("Enter departure time (HH:MM in 24h format): ")
         try:
@@ -234,7 +206,7 @@ class FlightManager:
             print("Invalid date/time format.")
             return
 
-# Get flight status
+        # Get flight status
         status_options = {
             "1": "Scheduled",
             "2": "Delayed",
@@ -245,7 +217,7 @@ class FlightManager:
         for selected_number, selected_status in status_options.items():
             print(f"{selected_number}. {selected_status}")
 
-        status_choice = input("Enter choice (1 / 2 / 3): ").strip()
+        status_choice = input("Enter choice (1 / 2 / 3)").strip()
 
         if status_choice not in status_options:
             print("Invalid. Please enter either 1 / 2 / 3")
@@ -254,36 +226,29 @@ class FlightManager:
         status = status_options[status_choice]
     
 
-# Ask if user wants to view pilot list
+        # Ask if user wants to view pilot list
         view_pilots = input("Would you like to see a list of available pilots? (Y/N): ").strip().upper()
         
         if view_pilots == 'Y':
-
-# This code identifies any pilots with flights on the date requested. 
-# This first table lists the pilots who currently have flights on the date provided by the user.     
+        # This code identifies any pilots with flights on the date requested. These pilots are removed from the list.    
+        # This first lists the pilots who currently have flights on the date provided by the user.     
 
             self.cursor.execute("""
-                SELECT 
-                    flight.flight_id, 
-                    flight_pilot.pilot_id, 
-                    pilot.first_name, 
-                    pilot.last_name, 
-                    flight.flight_time
+                SELECT flight.flight_id, flight_pilot.pilot_id, flight.flight_time
                 FROM flight_pilot
                 JOIN flight ON flight_pilot.flight_id = flight.flight_id
-                JOIN pilot ON flight_pilot.pilot_id = pilot.pilot_id
                 WHERE flight.flight_date = ?
                 """, (date_input,))
 
             day_flights = self.cursor.fetchall()
-
+            print("Flights found on that day:")
             if day_flights:
-                print("Pilots allocated to flights on this date:")
-                print(tabulate(day_flights, headers=["Flight Number", "Pilot ID", "First Name", "Surname", "Flight Time"], tablefmt="pretty"))
+                print("Flights found on this date")
+                print(tabulate(day_flights, headers=["Flight Number", "Pilot ID", "Flight Time"], tablefmt="pretty"))
             else:
                 print("There are no flights currently scheduled on this date.")
 
-# Secondly a list shows the pilots are available for the flight on this date.
+        # Secondly a list shows the pilots are available for the flight on this date.
             self.cursor.execute("""
                 SELECT pilot_id, first_name, last_name
                 FROM pilot
@@ -291,7 +256,7 @@ class FlightManager:
                     SELECT pilot_id
                     FROM flight_pilot
                     JOIN flight ON flight_pilot.flight_id = flight.flight_id
-                    WHERE flight.flight_date  = ?          
+                     WHERE flight.flight_date  = ?          
                 )
                 """, (date_input,))
 
@@ -303,24 +268,20 @@ class FlightManager:
                 print("No pilots found in the system.")
                 return
             
-# Get pilot ID. Always ask for the pilot_id, regardless of whether the user views the list or not. 
+               # Get pilot ID. Always ask for the pilot_id, regardless of whether the user views the list or not. 
         pilot_id = input("Enter  pilot ID to assign to flight: ").strip()
-        self.cursor.execute("""
-            SELECT first_name, last_name 
-            FROM Pilot 
-            WHERE pilot_id = ?
-        """, (pilot_id,))
+        self.cursor.execute("SELECT first_name, last_name FROM Pilot WHERE pilot_id = ?", (pilot_id,))
         pilot = self.cursor.fetchone()
         if not pilot:
             print("Pilot ID not found in records.")
             return
         
-# Get aircraft ID
+         # Get aircraft ID
         #reqeust ID from the user. If it doesn't match an aircraft_id in the aircraft table, error message is returned. The User is asked to select a validated aircraft_ID from a list. 
         print("\n--- Available Aircraft ---")
        
 
-# Create a list of available aircraft for the user to choose from on the given date. If no aircraft are available, the user will be notified. 
+    # Create a list of available aircraft for the user to choose from on the given date. If no aircraft are available, the user will be notified. Assumption:oOne flight per aircraft is available per day. 
         self.cursor.execute("""
             SELECT aircraft_id, registration_number, capacity, model
             FROM aircraft 
@@ -333,7 +294,7 @@ class FlightManager:
         available_plane = self.cursor.fetchall()
 # It may be that all aircraft are allocated to flights on the date provided. This catches them.
         if not available_plane:
-            print("Either all aircraft are being used, or your selected aircraft is being used for another flight on this day.")
+            print("Either all aircraft are being used, or your selected aircraft is being used for another flight on this day. Please make another selection")
             input("Press enter to return to the menu")
             return None #This prevents the rest of the code from running
         
@@ -342,7 +303,6 @@ class FlightManager:
 
         aircraft_id = None #the user may select an invalid aircraft id. This initialises aircraft_id
 
-#Checks that the aircraft is not available on the given date 
         while True:
             try:
                 selected_id = int(input("Enter the Aircraft ID you want to use: ").strip())
@@ -350,10 +310,10 @@ class FlightManager:
                     SELECT aircraft_id 
                     FROM aircraft 
                     WHERE aircraft_id = ?
-                    AND aircraft_id NOT IN(
-                        SELECT aircraft_id
-                        FROM flight
-                        WHERE flight_date = ?
+                        AND aircraft_id NOT IN(
+                            SELECT aircraft_id
+                            FROM flight
+                            WHERE flight_date = ?
                                     )
                 """, (selected_id, date_input))
                 if self.cursor.fetchone():
@@ -368,16 +328,16 @@ class FlightManager:
             print("Aircraft number is invalid.")
             return
 
-# This try inserts data into the tables. Any errors result in a message. 
+        # This try inserts data into the tables. Any errors result in a message. 
         try:
-# inserts new flight information into flight table
+        # inserts new flight information into flight table
             self.cursor.execute("""
                 INSERT INTO flight (origin_id, destination_id, aircraft_id, flight_date, flight_time, status) 
                 VALUES (?, ?, ?, ?, ?, ?)
             """, (origin_id, destination_id, aircraft_id, date_input, flight_time, status)) 
             flight_id = self.cursor.lastrowid
 
-# inserts pilot infromation into pilot table
+        # inserts pilot infromation into pilot table
 
             self.cursor.execute("""
                 INSERT INTO flight_pilot (flight_id, pilot_id)
@@ -393,12 +353,13 @@ class FlightManager:
             print(f"Database rejection, please start again: {e}")
             self.conn.rollback()
 
-# 5. Update flight 
+
+
+
 
     def update_flight(self):
         flight_id = input("Enter the Flight ID to update: ").strip()
 
-#retrieves data about a flight
         self.cursor.execute("""
             SELECT flight.*, pilot.pilot_id, pilot.first_name, pilot.last_name
             FROM flight
@@ -415,14 +376,14 @@ class FlightManager:
         print("\n--- Current Flight Details ---")
         print(f"Flight ID: {flight_data[0]} | Origin: {flight_data[1]} | Destination: {flight_data[2]} | Aircraft: {flight_data[3]} | Date: {flight_data[4]} | Time: {flight_data[5]} | Status: {flight_data[6]} | Pilot ID: {flight_data[7]} | First Name: {flight_data[8]} | Last Name {flight_data[9]}")
 
-# Ask for new details
+        # Ask for new details
         new_origin = input("Enter new Origin IATA code (or press Enter to keep current): ").strip().upper() or flight_data[1]
         new_destination = input("Enter new Destination IATA code (or press Enter to keep current): ").strip().upper() or flight_data[2]
         
         while True:
             new_aircraft_id = input("Enter new Aircraft ID (or press Enter to keep current): ").strip() or str(flight_data[3])
 
-#Check if the selected aircraft is already scheduled for use on the same date. 
+#Check if the selected aircraft is already scheduled for use on the same date
             self.cursor.execute("""
                 SELECT COUNT(*) FROM flight
                 WHERE aircraft_id = ? AND flight_date = ? AND flight_id != ?
@@ -430,7 +391,7 @@ class FlightManager:
             aircraft_conflict = self.cursor.fetchone()[0] > 0
 
             if aircraft_conflict:
-                print("Aircraft conflict: This aircraft is already assigned to another flight on this date. Please enter a different Aircraft ID.")
+                print("Aircraft conflict: This aircraft is already assigned to another flight on this date. Please enter a different Aircraft ID:")
             else:
                 break 
             
@@ -455,37 +416,14 @@ class FlightManager:
         else:
             new_status = flight_data[6]
 
-# Check if pilot update is needed
+        # Check if pilot update is needed
         change_pilot = input("Do you want to update the pilot? (Y/N): ").strip().upper()
-        new_pilot_id = str(flight_data[7]) #set default to existing pilot
+        new_pilot_id = str(flight_data[7]) #set's default to existing pilot
 
         if change_pilot == 'Y':
-            #fetch all available pilots
-            self.cursor.execute("SELECT pilot_id, first_name, last_name FROM pilot")
-            available_pilots = self.cursor.fetchall()  # 🔧 Fetch all pilots for validation
-
-            if not available_pilots:
-                print("No pilots found in the database.")
-                return
-
-            print("\nAvailable Pilots:")
-            for pilot in available_pilots:
-                print(f" - ID: {pilot[0]} | Name: {pilot[1]} {pilot[2]}")
-
-            while True:  
-                new_pilot_id = input("Please enter a new Pilot ID from the list above (or press Enter to cancel): ").strip()
-                
-                if new_pilot_id == "":
-                    print("Pilot update cancelled. Keeping original pilot.")
-                    new_pilot_id = str(flight_data[7]) # Reassign original pilot ID
-                    break  
-
-                if new_pilot_id.isdigit() and any(pilot[0] == int(new_pilot_id) for pilot in available_pilots):
-                    break  
-                else:
-                    print("Invalid Pilot ID. Please choose one from the list.")  
-
-# checks that the selected pilot exists in the database
+            new_pilot_id = input("Enter new Pilot ID: ").strip()
+            
+#checks that the pilot exists in the database
             self.cursor.execute("""
                 SELECT first_name, last_name 
                 FROM pilot 
@@ -494,10 +432,13 @@ class FlightManager:
             pilot_record = self.cursor.fetchone()
 
             if not pilot_record:
-                print("Pilot not found.")  
+                print("Pilot not found.")
                 return
             
-# Checks that there are no conflict with pilot on same date
+            
+    
+
+        # Checks that there are no conflict with pilot on same date
 
         if new_pilot_id:
             self.cursor.execute("""
@@ -527,24 +468,20 @@ class FlightManager:
                     for pilot in available_pilots:
                         print(f"{pilot[0]}: {pilot[1]} {pilot[2]}")
 
-                    while True:
-                        new_pilot_id = input("Please enter a different Pilot ID from the list above: ").strip()
+            while True:
+                new_pilot_id = input("Please enter a different Pilot ID from the list above: ").strip()
 
-                        if new_pilot_id == "":
-                            new_pilot_id = str(flight_data[7])  # fallback to original
-                            break
-
-                        if new_pilot_id.isdigit() and any(pilot[0] == int(new_pilot_id) for pilot in available_pilots):
-                            new_pilot_id = new_pilot_id  # Reassign valid pilot
-                            break
-                        else:
-                            print("Invalid Pilot ID. Please choose one from the list.")
+                if any(pilot[0] == int(new_pilot_id) for pilot in available_pilots):
+                    new_pilot_id = new_pilot_id  # Reassign valid pilot
+                    break
                 else:
-                    print("No pilots available on this date. Please press enter to return to the menu.")
-                    input()
-                    return
+                    print("Invalid Pilot ID. Please choose one from the list.")
+        else:
+            print("No pilots available on this date. Please press enter to return to the menu.")
+            input()
+            return
                     
-# Update the flight record
+        # Update the flight record
         try:
             self.cursor.execute("""
                 UPDATE flight
@@ -572,12 +509,12 @@ class FlightManager:
             print(f"Failed to update flight: {e}")
 
 
-#6. delete flight requesting flight_id from the user 
+#delete flight requesting flight_id from the user 
 
     def delete_flight(self):
         flight_id = input("Enter the Flight ID to delete: ").strip()
 
-# Confirm the flight exists
+        # Confirm the flight exists
         self.cursor.execute("""
             SELECT * FROM flight 
                 WHERE flight_id = ?
@@ -588,20 +525,20 @@ class FlightManager:
             print("Flight not found.")
             return
 
-# Confirm deletion
+        # Confirm deletion
         confirm = input(f"Are you sure you want to delete Flight ID {flight_id}? (Y/N): ").strip().upper()
         if confirm != 'Y':
             print("Deletion cancelled.")
             return
 
         try:
-# Delete related pilot first
+            # Delete related pilot assignment first (if any)
             self.cursor.execute("""
                 DELETE FROM flight_pilot 
                     WHERE flight_id = ?
             """, (flight_id,))
             
-# Delete the flight record
+            # Delete the flight record
             self.cursor.execute("""
                 DELETE FROM flight
                     WHERE flight_id = ?
