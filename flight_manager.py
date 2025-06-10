@@ -391,7 +391,7 @@ class FlightManager:
             aircraft_conflict = self.cursor.fetchone()[0] > 0
 
             if aircraft_conflict:
-                print("Aircraft conflict: This aircraft is already assigned to another flight on this date. Please enter a different Aircraft ID:")
+                print("Aircraft conflict: This aircraft is already assigned to another flight on this date.")
             else:
                 break 
             

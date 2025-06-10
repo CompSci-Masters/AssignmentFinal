@@ -29,8 +29,5 @@ Useful information:
 pip install tabulate
 pip install matplotlib
 
-import sqlite3
-from tabulate import tabulate 
-from datetime import datetime 
-import matplotlib.pyplot as visual
+
 
