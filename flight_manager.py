@@ -9,7 +9,7 @@ class FlightManager:
         self.cursor = self.conn.cursor()
 
 
-#allow the user to view flight by flight ID
+#1. Allows the user to view flight by flight ID
     def search_by_flight_id(self):
         flight_id = input("Enter Flight ID: ").strip()
         self.cursor.execute("""
@@ -23,6 +23,7 @@ class FlightManager:
         else:
             print("No flight found with that ID.")
 
+#2. Allows the user to view flights by date
     def search_by_date(self):
         search_date = input("Enter flight start date for the period you wish to view (DD/MM/YYYY): ").strip()
 
@@ -49,6 +50,7 @@ class FlightManager:
         else:
             print("No flights found on that date.")
 
+#3. Allows the user to view flights by status
     def search_by_status(self):
 
         status_options = {
@@ -85,7 +87,7 @@ class FlightManager:
             print(f"No flights found with status '{selected_status}'.")
 
 
-#calls all flights, allowing user to filter by column heading. This includes flight information and pilot information. 
+#4. Lists all flights, allowing user to filter by column heading. This includes flight information and pilot information. 
     def view_flights(self):
 # Rename all column headings into user-friendly titles 
         column_map = {
@@ -99,7 +101,6 @@ class FlightManager:
             "pilot.pilot_id": "Pilot ID",
             "pilot.first_name": "Pilot First Name",
             "pilot.last_name": "Pilot Last Name"        
-
         }
 
         all_columns = list(column_map.keys()) #stores the actual database column names (i.e. the keys)
@@ -110,9 +111,7 @@ class FlightManager:
         for i, name in enumerate(display_names, start=1): #enumerate allocates index number starting from 1 followed by the user-friendly column name 
             print(f"{i}. {name}")
 
-
-# The user selects which columns should be shown in the table. 
-
+# The user selects which columns should be shown in the table.
 # User is asked for their selection from a list and this is stored. 
 
         selected = input("\nEnter column numbers separated by commas (e.g., 1,3,4) or press Enter to show all: ").strip()
@@ -134,10 +133,10 @@ class FlightManager:
             selected_columns = all_columns #if the user presses enter, show all actual database columns names
             selected_labels = display_names # show all user-friendly column labels 
 
- # Build the SQL query with aliases for user-friendly headers
+# Build the SQL query with aliases for user-friendly headers
         select_clause = ", ".join(f"{col} AS '{column_map[col]}'" for col in selected_columns) #maps each database column 
 
-#this creates the final SQL statement tha will be eventually used. 
+#This creates the final SQL statement tha will be eventually used. 
         view_query = f"""
             SELECT {select_clause} 
             FROM flight
@@ -160,7 +159,7 @@ class FlightManager:
             print(f"Unable to fetch flight data. Please try again.: {e}") #if there is a n invalid query, this error message is shown.            
 
 
-#adds new flight
+#5. Adds new flight
     def add_new_flight(self):
         print("\n=== Add New Flight ===")
 
@@ -207,7 +206,7 @@ class FlightManager:
         for selected_number, selected_status in status_options.items():
             print(f"{selected_number}. {selected_status}")
 
-        status_choice = input("Enter choice (1 / 2 / 3)").strip()
+        status_choice = input("Enter choice (1 / 2 / 3): ").strip()
 
         if status_choice not in status_options:
             print("Invalid. Please enter either 1 / 2 / 3")
@@ -342,7 +341,7 @@ class FlightManager:
             print(f"Database rejection, please start again: {e}")
             self.conn.rollback()
 
-#updates flight
+#6. Updates flight
 
     def update_flight(self):
         flight_id = input("Enter the Flight ID to update: ").strip()
@@ -435,7 +434,7 @@ class FlightManager:
 
             if conflict_pilot:
                 print("This pilot is assigned to another flight on this date. Please see a list of available pilots below")
-#provides a list of available pilots on this date
+# Provides a list of available pilots on this date
                 self.cursor.execute("""
                     SELECT pilot_id, first_name, last_name 
                     FROM pilot
@@ -504,7 +503,7 @@ class FlightManager:
             print(f"Failed to update flight: {e}")
 
 
-#delete flight requesting flight_id from the user 
+#7. Delete flight using flight_id
 
     def delete_flight(self):
         flight_id = input("Enter the Flight ID to delete: ").strip()
